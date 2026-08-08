@@ -1,0 +1,274 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── USUARIOS ───────────────────────────────────────────────────────────────
+
+model Usuario {
+  id       String   @id @default(cuid())
+  nombre   String
+  email    String   @unique
+  password String
+  rol      String   @default("vendedora") // dueña | admin | vendedora
+  activo   Boolean  @default(true)
+  creadoEn DateTime @default(now())
+
+  facturas     Factura[]
+  cotizaciones Cotizacion[]
+  pagos        Pago[]
+}
+
+// ─── CLIENTES ────────────────────────────────────────────────────────────────
+
+model Cliente {
+  id        String   @id @default(cuid())
+  nombre    String
+  cedula    String?  @unique
+  telefono  String?
+  email     String?
+  direccion String?
+  notas     String?
+  creadoEn  DateTime @default(now())
+
+  facturas     Factura[]
+  cotizaciones Cotizacion[]
+}
+
+// ─── CATEGORÍAS ──────────────────────────────────────────────────────────────
+
+model Categoria {
+  id     String @id @default(cuid())
+  nombre String @unique
+
+  productos Producto[]
+}
+
+// ─── RECURSOS DE PRODUCCIÓN (materiales, mano de obra, otros costos) ────────
+
+model Recurso {
+  id     String @id @default(cuid())
+  nombre String
+  sku    String?
+  tipo   String // material | mano_obra | otro
+  descripcion String?
+
+  unidadMedida String // unidad | hoja | metro | cm | ml | litro | gramo | kilogramo | minuto | hora
+
+  // El usuario introduce costo de compra + cantidad adquirida; costoUnitario
+  // se deriva de ahí y es el valor autoritativo usado en cálculos de receta.
+  costoCompra    Decimal @db.Decimal(12, 4)
+  cantidadCompra Decimal @db.Decimal(12, 4)
+  costoUnitario  Decimal @db.Decimal(12, 6)
+
+  // Preparado para Fase 2 (descuento automático de inventario) — sin lógica activa.
+  stock        Decimal? @db.Decimal(12, 4)
+  stockMinimo  Decimal? @db.Decimal(12, 4)
+
+  activo   Boolean  @default(true)
+  creadoEn DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  recetaItems RecetaItem[]
+
+  @@index([tipo])
+}
+
+// ─── PRODUCTOS ───────────────────────────────────────────────────────────────
+
+model Producto {
+  id          String  @id @default(cuid())
+  nombre      String
+  descripcion String?
+  sku         String? @unique
+  categoriaId String?
+
+  tipoCosteo String // simple | compuesto
+
+  // Solo aplica si tipoCosteo = "simple" — en "compuesto" el costo se calcula
+  // en vivo a partir de la receta (ver src/lib/costeo.ts), nunca se guarda aquí.
+  costo Decimal? @db.Decimal(12, 4)
+
+  precio         Decimal  @db.Decimal(12, 4)
+  margenObjetivo Decimal? @db.Decimal(5, 4) // 0-1, ej. 0.40 = 40%
+
+  // Preparado para Fase 2 — sin lógica de descuento activa todavía.
+  stock       Decimal? @db.Decimal(12, 4)
+  stockMinimo Decimal? @db.Decimal(12, 4)
+
+  activo   Boolean  @default(true)
+  creadoEn DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  categoria Categoria? @relation(fields: [categoriaId], references: [id])
+  receta    Receta?
+
+  itemsFactura    ItemFactura[]
+  itemsCotizacion ItemCotizacion[]
+  extras          ProductoExtra[]
+
+  // Como componente dentro de la receta de OTRO producto (combos).
+  usadoEnRecetas RecetaItem[] @relation("ProductoComponente")
+
+  @@index([tipoCosteo])
+}
+
+// ─── RECETAS DE PRODUCCIÓN (BOM) ─────────────────────────────────────────────
+
+model Receta {
+  id          String @id @default(cuid())
+  productoId  String @unique
+  notas       String?
+  rendimiento Int    @default(1) // unidades de producto que produce una corrida de esta receta
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  producto Producto     @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  items    RecetaItem[]
+}
+
+model RecetaItem {
+  id       String @id @default(cuid())
+  recetaId String
+
+  // Exactamente uno de los dos debe estar seteado — validado en el servicio
+  // (src/lib/recetas.ts), Prisma no expresa XOR nativamente.
+  recursoId            String?
+  productoComponenteId String?
+
+  cantidad Decimal @db.Decimal(12, 4)
+  unidad   String
+  mermaPct Decimal @default(0) @db.Decimal(5, 4) // 0-1, preparado para Fase 2 de mermas
+
+  orden Int @default(0)
+
+  receta            Receta    @relation(fields: [recetaId], references: [id], onDelete: Cascade)
+  recurso           Recurso?  @relation(fields: [recursoId], references: [id])
+  productoComponente Producto? @relation("ProductoComponente", fields: [productoComponenteId], references: [id])
+
+  @@index([recetaId])
+  @@index([recursoId])
+  @@index([productoComponenteId])
+}
+
+// ─── EXTRAS OPCIONALES ────────────────────────────────────────────────────────
+
+model ProductoExtra {
+  id         String  @id @default(cuid())
+  productoId String
+  nombre     String
+  tipo       String // precio | costo | ambos
+  montoPrecio Decimal @default(0) @db.Decimal(12, 4)
+  montoCosto  Decimal @default(0) @db.Decimal(12, 4)
+  activo     Boolean @default(true)
+
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@index([productoId])
+}
+
+// ─── COTIZACIONES ────────────────────────────────────────────────────────────
+
+model Cotizacion {
+  id          String    @id @default(cuid())
+  numero      String    @unique
+  clienteId   String?
+  usuarioId   String?
+  estado      String    @default("borrador") // borrador | enviada | aceptada | rechazada | expirada
+  subtotal    Decimal   @db.Decimal(12, 4)
+  descuento   Decimal   @default(0) @db.Decimal(12, 4)
+  total       Decimal   @db.Decimal(12, 4)
+  notas       String?
+  validaHasta DateTime?
+  creadoEn    DateTime  @default(now())
+
+  cliente Cliente?         @relation(fields: [clienteId], references: [id])
+  usuario Usuario?         @relation(fields: [usuarioId], references: [id])
+  items   ItemCotizacion[]
+}
+
+model ItemCotizacion {
+  id           String  @id @default(cuid())
+  cotizacionId String
+  productoId   String?
+  descripcion  String
+  cantidad     Int
+  precio       Decimal @db.Decimal(12, 4)
+  descuento    Decimal @default(0) @db.Decimal(12, 4)
+  total        Decimal @db.Decimal(12, 4)
+
+  cotizacion Cotizacion @relation(fields: [cotizacionId], references: [id])
+  producto   Producto?  @relation(fields: [productoId], references: [id])
+
+  @@index([cotizacionId])
+}
+
+// ─── FACTURAS ────────────────────────────────────────────────────────────────
+
+model Factura {
+  id         String    @id @default(cuid())
+  numero     String    @unique
+  clienteId  String?
+  usuarioId  String?
+  estado     String    @default("pendiente") // pendiente | pagada | anulada
+  metodoPago String? // efectivo | tarjeta | transferencia
+  subtotal   Decimal   @db.Decimal(12, 4)
+  descuento  Decimal   @default(0) @db.Decimal(12, 4)
+  total      Decimal   @db.Decimal(12, 4)
+  notas      String?
+  creadoEn   DateTime  @default(now())
+
+  cliente Cliente?      @relation(fields: [clienteId], references: [id])
+  usuario Usuario?      @relation(fields: [usuarioId], references: [id])
+  items   ItemFactura[]
+  pagos   Pago[]
+}
+
+// Snapshot de costo/margen al momento de vender — extiende el patrón existente
+// (ItemFactura.costo) en vez de crear una tabla product_cost_snapshots aparte.
+model ItemFactura {
+  id          String  @id @default(cuid())
+  facturaId   String
+  productoId  String?
+  descripcion String
+  cantidad    Int     @default(1)
+  precio      Decimal @db.Decimal(12, 4)
+  descuento   Decimal @default(0) @db.Decimal(12, 4)
+  total       Decimal @db.Decimal(12, 4)
+
+  // Snapshot — congelado al facturar, los reportes históricos SIEMPRE leen
+  // estos campos, nunca recalculan con costos actuales de Recurso/Receta.
+  costoMateriales Decimal? @db.Decimal(12, 4)
+  costoManoObra   Decimal? @db.Decimal(12, 4)
+  costoOtros      Decimal? @db.Decimal(12, 4)
+  costoTotal      Decimal? @db.Decimal(12, 4)
+  margenObtenido  Decimal? @db.Decimal(5, 4) // 0-1
+
+  factura  Factura   @relation(fields: [facturaId], references: [id])
+  producto Producto? @relation(fields: [productoId], references: [id])
+
+  @@index([facturaId])
+}
+
+// ─── PAGOS ────────────────────────────────────────────────────────────────────
+
+model Pago {
+  id         String   @id @default(cuid())
+  facturaId  String
+  usuarioId  String?
+  monto      Decimal  @db.Decimal(12, 4)
+  metodo     String // efectivo | tarjeta | transferencia
+  referencia String?
+  notas      String?
+  creadoEn   DateTime @default(now())
+
+  factura Factura  @relation(fields: [facturaId], references: [id])
+  usuario Usuario? @relation(fields: [usuarioId], references: [id])
+
+  @@index([facturaId])
+}
