@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
-import { Plus, Trash2, Layers, Wrench, Package, DollarSign, TrendingUp, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2, Pencil, Layers, Wrench, Package, DollarSign, TrendingUp, Loader2 } from "lucide-react";
 import { AgregarComponenteReceta } from "@/components/agregar-componente-receta";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const TIPO_LABEL: Record<string, string> = { material: "Material", mano_obra: "Mano de obra", otro: "Otro costo" };
 
@@ -21,6 +23,17 @@ type Item = {
   recurso: { id: string; nombre: string; tipo: string; costoUnitario: string } | null;
   productoComponente: { id: string; nombre: string } | null;
 };
+
+export type Extra = {
+  id: string;
+  nombre: string;
+  tipo: string; // precio | costo | ambos
+  montoPrecio: string;
+  montoCosto: string;
+  activo: boolean;
+};
+
+const EXTRA_TIPO_LABEL: Record<string, string> = { precio: "Precio", costo: "Costo", ambos: "Precio y costo" };
 
 function n(s: string) { return Number(s); }
 function fmt(v: number) {
@@ -34,11 +47,267 @@ function costoItem(item: Item) {
   return null; // costo de sub-producto no se recalcula en el cliente, se refleja al recargar
 }
 
+// Cantidad/unidad/merma de un componente ya agregado — el recurso/producto
+// referenciado no se puede cambiar aquí (para eso se borra y se agrega de nuevo).
+function EditarItemDialog({
+  open,
+  onOpenChange,
+  productoId,
+  item,
+  onGuardado,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  productoId: string;
+  item: Item | null;
+  onGuardado: () => void;
+}) {
+  const [cantidad, setCantidad] = useState(item?.cantidad ?? "");
+  const [unidad, setUnidad] = useState(item?.unidad ?? "");
+  const [mermaPct, setMermaPct] = useState(item ? String(n(item.mermaPct) * 100) : "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!item) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/productos/${productoId}/receta-items/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cantidad: Number(cantidad),
+          unidad,
+          mermaPct: mermaPct ? Number(mermaPct) / 100 : 0,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Error al guardar");
+        return;
+      }
+      onGuardado();
+      onOpenChange(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Editar componente</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <p className="text-sm font-medium">{item?.recurso?.nombre ?? item?.productoComponente?.nombre}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Cantidad *</Label>
+              <Input required type="number" step="0.0001" min="0.0001" value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Unidad</Label>
+              <Input value={unidad} onChange={(e) => setUnidad(e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Merma (% opcional)</Label>
+            <Input type="number" step="0.1" min="0" max="90" value={mermaPct} onChange={(e) => setMermaPct(e.target.value)} placeholder="0" />
+          </div>
+          {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="submit" disabled={loading} className="gap-2">
+              {loading && <Loader2 size={14} className="animate-spin" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ExtraForm({
+  open,
+  onOpenChange,
+  productoId,
+  onGuardado,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  productoId: string;
+  onGuardado: () => void;
+}) {
+  const [nombre, setNombre] = useState("");
+  const [tipo, setTipo] = useState("precio");
+  const [montoPrecio, setMontoPrecio] = useState("");
+  const [montoCosto, setMontoCosto] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/productos/${productoId}/extras`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre,
+          tipo,
+          montoPrecio: montoPrecio ? Number(montoPrecio) : 0,
+          montoCosto: montoCosto ? Number(montoCosto) : 0,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Error al crear el extra");
+        return;
+      }
+      onGuardado();
+      onOpenChange(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Nuevo extra opcional</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Nombre *</Label>
+            <Input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Grabado láser" autoFocus />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Afecta *</Label>
+            <Select value={tipo} onValueChange={(v) => setTipo(v ?? "precio")}>
+              <SelectTrigger><SelectValue>{(v: string) => EXTRA_TIPO_LABEL[v] ?? v}</SelectValue></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="precio">Solo precio (lo que paga el cliente)</SelectItem>
+                <SelectItem value="costo">Solo costo (no se cobra aparte)</SelectItem>
+                <SelectItem value="ambos">Precio y costo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {tipo !== "costo" && (
+              <div className="space-y-1.5">
+                <Label>+ Precio (RD$)</Label>
+                <Input type="number" step="0.01" min="0" value={montoPrecio} onChange={(e) => setMontoPrecio(e.target.value)} placeholder="0.00" />
+              </div>
+            )}
+            {tipo !== "precio" && (
+              <div className="space-y-1.5">
+                <Label>+ Costo (RD$)</Label>
+                <Input type="number" step="0.01" min="0" value={montoCosto} onChange={(e) => setMontoCosto(e.target.value)} placeholder="0.00" />
+              </div>
+            )}
+          </div>
+          {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="submit" disabled={loading} className="gap-2">
+              {loading && <Loader2 size={14} className="animate-spin" />}
+              Crear extra
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ExtrasProducto({ productoId, extras }: { productoId: string; extras: Extra[] }) {
+  const router = useRouter();
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  async function toggleActivo(extra: Extra) {
+    await fetch(`/api/productos/${productoId}/extras/${extra.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ activo: !extra.activo }),
+    });
+    router.refresh();
+  }
+
+  async function eliminarExtra(extraId: string) {
+    if (!confirm("¿Eliminar este extra?")) return;
+    await fetch(`/api/productos/${productoId}/extras/${extraId}`, { method: "DELETE" });
+    router.refresh();
+  }
+
+  return (
+    <div className="border border-border rounded-xl bg-card overflow-x-auto">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div>
+          <h3 className="text-sm font-semibold">Extras opcionales</h3>
+          <p className="text-xs text-muted-foreground">Se seleccionan al facturar este producto</p>
+        </div>
+        <Button size="sm" onClick={() => setDialogOpen(true)} className="gap-1.5">
+          <Plus size={14} />
+          Agregar extra
+        </Button>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Afecta</TableHead>
+            <TableHead className="text-right">+ Precio</TableHead>
+            <TableHead className="text-right">+ Costo</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {extras.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                Sin extras — ej. grabado láser, empaque de regalo, cargo por urgencia
+              </TableCell>
+            </TableRow>
+          ) : (
+            extras.map((ex) => (
+              <TableRow key={ex.id}>
+                <TableCell className="font-medium">{ex.nombre}</TableCell>
+                <TableCell className="text-muted-foreground">{EXTRA_TIPO_LABEL[ex.tipo] ?? ex.tipo}</TableCell>
+                <TableCell className="text-right">{ex.tipo !== "costo" ? fmt(n(ex.montoPrecio)) : "—"}</TableCell>
+                <TableCell className="text-right text-muted-foreground">{ex.tipo !== "precio" ? fmt(n(ex.montoCosto)) : "—"}</TableCell>
+                <TableCell>
+                  <button onClick={() => toggleActivo(ex)}>
+                    <StatusBadge variant={ex.activo ? "success" : "muted"} label={ex.activo ? "Activo" : "Inactivo"} />
+                  </button>
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="sm" onClick={() => eliminarExtra(ex.id)}>
+                    <Trash2 size={14} className="text-red-500" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+      <ExtraForm open={dialogOpen} onOpenChange={setDialogOpen} productoId={productoId} onGuardado={() => router.refresh()} />
+    </div>
+  );
+}
+
 export function ProductoDetalle({
   rol,
   producto,
   costo,
   items,
+  extras,
   recursosDisponibles,
   productosDisponibles,
 }: {
@@ -51,6 +320,7 @@ export function ProductoDetalle({
   };
   costo: { materiales: string; manoObra: string; otros: string; total: string };
   items: Item[];
+  extras: Extra[];
   recursosDisponibles: { id: string; nombre: string; tipo: string; unidadMedida: string }[];
   productosDisponibles: { id: string; nombre: string; tipoCosteo: string }[];
 }) {
@@ -58,6 +328,12 @@ export function ProductoDetalle({
   const puedeVerCostos = ["dueña", "admin"].includes(rol);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editandoItem, setEditandoItem] = useState<Item | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  // Fuerza remount del diálogo de edición al abrirlo — mismo motivo que el
+  // fix de RecursoForm/ClienteForm: sin esto, reabrir para otro item arrastra
+  // los valores del item editado anteriormente.
+  const [editFormInstance, setEditFormInstance] = useState(0);
   const [guardandoPrecio, setGuardandoPrecio] = useState(false);
   const [guardandoCosto, setGuardandoCosto] = useState(false);
   const [precioForm, setPrecioForm] = useState(producto.precio);
@@ -133,6 +409,12 @@ export function ProductoDetalle({
     if (!confirm("¿Quitar este componente de la receta?")) return;
     await fetch(`/api/productos/${producto.id}/receta-items/${itemId}`, { method: "DELETE" });
     router.refresh();
+  }
+
+  function abrirEditarItem(item: Item) {
+    setEditandoItem(item);
+    setEditFormInstance((n) => n + 1);
+    setEditDialogOpen(true);
   }
 
   const itemsOrdenados = useMemo(() => items, [items]);
@@ -216,6 +498,7 @@ export function ProductoDetalle({
                   <TableHead>Tipo</TableHead>
                   <TableHead className="text-right">Cantidad</TableHead>
                   <TableHead>Unidad</TableHead>
+                  <TableHead className="text-right">Merma</TableHead>
                   {puedeVerCostos && <TableHead className="text-right">Costo unit.</TableHead>}
                   {puedeVerCostos && <TableHead className="text-right">Costo</TableHead>}
                   <TableHead />
@@ -224,7 +507,7 @@ export function ProductoDetalle({
               <TableBody>
                 {itemsOrdenados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                       Sin componentes todavía — agrega el primero
                     </TableCell>
                   </TableRow>
@@ -241,6 +524,9 @@ export function ProductoDetalle({
                         </TableCell>
                         <TableCell className="text-right">{item.cantidad}</TableCell>
                         <TableCell className="text-muted-foreground">{item.unidad}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {n(item.mermaPct) > 0 ? pct(n(item.mermaPct)) : "—"}
+                        </TableCell>
                         {puedeVerCostos && (
                           <TableCell className="text-right text-muted-foreground">
                             {item.recurso ? fmt(n(item.recurso.costoUnitario)) : "—"}
@@ -252,9 +538,14 @@ export function ProductoDetalle({
                           </TableCell>
                         )}
                         <TableCell>
-                          <Button variant="ghost" size="sm" onClick={() => eliminarItem(item.id)}>
-                            <Trash2 size={14} className="text-red-500" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => abrirEditarItem(item)}>
+                              <Pencil size={14} />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => eliminarItem(item.id)}>
+                              <Trash2 size={14} className="text-red-500" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -271,8 +562,19 @@ export function ProductoDetalle({
             recursos={recursosDisponibles}
             productos={productosDisponibles}
           />
+
+          <EditarItemDialog
+            key={editFormInstance}
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            productoId={producto.id}
+            item={editandoItem}
+            onGuardado={() => router.refresh()}
+          />
         </div>
       )}
+
+      {puedeVerCostos && <ExtrasProducto productoId={producto.id} extras={extras} />}
 
       {puedeVerCostos && (
         <div className="border border-border rounded-xl p-5 bg-card space-y-4">

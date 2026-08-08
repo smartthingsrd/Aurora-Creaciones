@@ -18,6 +18,7 @@ const ROLES = [
   { value: "admin", label: "Admin" },
   { value: "vendedora", label: "Vendedora" },
 ];
+const ROL_LABEL: Record<string, string> = Object.fromEntries(ROLES.map((r) => [r.value, r.label]));
 
 export function GestionUsuarios({ usuariosIniciales }: { usuariosIniciales: Usuario[] }) {
   const router = useRouter();
@@ -107,7 +108,7 @@ export function GestionUsuarios({ usuariosIniciales }: { usuariosIniciales: Usua
             <div className="space-y-1.5">
               <Label>Rol *</Label>
               <Select value={form.rol} onValueChange={(v) => set("rol", v ?? "")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue>{(v: string) => ROL_LABEL[v] ?? v}</SelectValue></SelectTrigger>
                 <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>

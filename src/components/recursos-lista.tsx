@@ -123,7 +123,7 @@ function RecursoForm({
             <div className="space-y-1.5">
               <Label>Tipo *</Label>
               <Select value={form.tipo} onValueChange={(v) => set("tipo", v ?? "material")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue>{(v: string) => TIPO_LABEL[v] ?? v}</SelectValue></SelectTrigger>
                 <SelectContent>
                   {TIPOS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                 </SelectContent>

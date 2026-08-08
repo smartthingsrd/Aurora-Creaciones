@@ -90,7 +90,7 @@ export function ProductoNuevoForm({
       <div className="space-y-1.5">
         <Label>Tipo de costeo *</Label>
         <Select value={form.tipoCosteo} onValueChange={(v) => set("tipoCosteo", v ?? "simple")} disabled={!puedeCompuesto}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger><SelectValue>{(v: string) => (v === "compuesto" ? "Compuesto" : "Simple")}</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="simple">Simple — costo se ingresa directo</SelectItem>
             <SelectItem value="compuesto">Compuesto — costo se calcula por receta</SelectItem>

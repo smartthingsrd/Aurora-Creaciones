@@ -20,6 +20,7 @@ type ItemInput = {
   cantidad: number;
   precio: number;
   descuento?: number;
+  extraIds?: string[];
 };
 
 export const POST = withAuthRoute(async (req, ctx) => {
@@ -38,8 +39,26 @@ export const POST = withAuthRoute(async (req, ctx) => {
   const itemsConSnapshot = await Promise.all(
     items.map(async (item) => {
       const cantidad = new Prisma.Decimal(item.cantidad);
-      const precio = new Prisma.Decimal(item.precio);
       const descuento = new Prisma.Decimal(item.descuento ?? 0);
+
+      // Los extras seleccionados se resuelven server-side (nunca se confía en
+      // montos que mande el cliente) — solo cuentan los que de verdad
+      // pertenecen a este producto y siguen activos.
+      let descripcion = item.descripcion;
+      let extraPrecioUnitario = new Prisma.Decimal(0);
+      let extraCostoUnitario = new Prisma.Decimal(0);
+      if (item.productoId && item.extraIds && item.extraIds.length > 0) {
+        const extras = await prisma.productoExtra.findMany({
+          where: { id: { in: item.extraIds }, productoId: item.productoId, activo: true },
+        });
+        for (const ex of extras) {
+          if (ex.tipo !== "costo") extraPrecioUnitario = extraPrecioUnitario.plus(ex.montoPrecio);
+          if (ex.tipo !== "precio") extraCostoUnitario = extraCostoUnitario.plus(ex.montoCosto);
+        }
+        if (extras.length > 0) descripcion = `${descripcion} + ${extras.map((e) => e.nombre).join(", ")}`;
+      }
+
+      const precio = new Prisma.Decimal(item.precio).plus(extraPrecioUnitario);
       const total = precio.mul(cantidad).minus(descuento);
 
       let costoMateriales: InstanceType<typeof Prisma.Decimal> | null = null;
@@ -52,14 +71,14 @@ export const POST = withAuthRoute(async (req, ctx) => {
         const desglose = await calcularCostoProducto(item.productoId);
         costoMateriales = desglose.materiales.mul(cantidad);
         costoManoObra = desglose.manoObra.mul(cantidad);
-        costoOtros = desglose.otros.mul(cantidad);
-        costoTotal = desglose.total.mul(cantidad);
+        costoOtros = desglose.otros.mul(cantidad).plus(extraCostoUnitario.mul(cantidad));
+        costoTotal = costoMateriales.plus(costoManoObra).plus(costoOtros);
         margenObtenido = margenDesdePrecio(costoTotal, total);
       }
 
       return {
         productoId: item.productoId ?? null,
-        descripcion: item.descripcion,
+        descripcion,
         cantidad: item.cantidad,
         precio,
         descuento,

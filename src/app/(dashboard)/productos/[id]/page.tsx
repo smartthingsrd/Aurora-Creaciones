@@ -13,6 +13,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
     where: { id },
     include: {
       categoria: true,
+      extras: { orderBy: { nombre: "asc" } },
       receta: {
         include: {
           items: {
@@ -78,6 +79,14 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
               : null,
           })) ?? []
         }
+        extras={producto.extras.map((ex) => ({
+          id: ex.id,
+          nombre: ex.nombre,
+          tipo: ex.tipo,
+          montoPrecio: ex.montoPrecio.toString(),
+          montoCosto: ex.montoCosto.toString(),
+          activo: ex.activo,
+        }))}
         recursosDisponibles={recursos.map((r) => ({ id: r.id, nombre: r.nombre, tipo: r.tipo, unidadMedida: r.unidadMedida }))}
         productosDisponibles={productosDisponibles}
       />
