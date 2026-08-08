@@ -70,7 +70,12 @@ export default async function ProductosPage() {
                   )}
                   <TableCell className="text-right font-medium">{fmt(Number(p.precio))}</TableCell>
                   <TableCell>
-                    <StatusBadge variant={p.activo ? "success" : "muted"} label={p.activo ? "Activo" : "Inactivo"} />
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <StatusBadge variant={p.activo ? "success" : "muted"} label={p.activo ? "Activo" : "Inactivo"} />
+                      {p.stock != null && p.stockMinimo != null && Number(p.stock) <= Number(p.stockMinimo) && (
+                        <StatusBadge variant="danger" label="Stock bajo" />
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

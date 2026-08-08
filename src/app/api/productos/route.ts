@@ -17,7 +17,7 @@ export const GET = withAuthRoute(async () => {
 // (implican costeo/receta) — se valida dentro, no con el guard de rol general.
 export const POST = withAuthRoute(async (req, ctx) => {
   const data = await req.json();
-  const { nombre, descripcion, sku, categoriaId, tipoCosteo, costo, precio, margenObjetivo } = data;
+  const { nombre, descripcion, sku, categoriaId, tipoCosteo, costo, precio, margenObjetivo, stock, stockMinimo } = data;
 
   if (!nombre || !tipoCosteo || precio == null) {
     return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
@@ -36,6 +36,10 @@ export const POST = withAuthRoute(async (req, ctx) => {
       costo: tipoCosteo === "simple" && costo != null ? new Prisma.Decimal(costo) : null,
       precio: new Prisma.Decimal(precio),
       margenObjetivo: margenObjetivo != null ? new Prisma.Decimal(margenObjetivo) : null,
+      // Stock solo se rastrea para productos simples — un compuesto se fabrica
+      // sobre pedido y su "stock" real es el de los recursos de su receta.
+      stock: tipoCosteo === "simple" && stock != null && stock !== "" ? new Prisma.Decimal(stock) : null,
+      stockMinimo: tipoCosteo === "simple" && stockMinimo != null && stockMinimo !== "" ? new Prisma.Decimal(stockMinimo) : null,
       ...(tipoCosteo === "compuesto" ? { receta: { create: {} } } : {}),
     },
   });

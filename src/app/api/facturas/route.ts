@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { withAuthRoute } from "@/lib/api-guard";
 import { calcularCostoProducto } from "@/lib/costeo";
 import { margenDesdePrecio } from "@/lib/margen";
+import { descontarStockPorVenta } from "@/lib/inventario";
 import { Prisma } from "@/generated/prisma/client";
 
 export const GET = withAuthRoute(async () => {
@@ -74,18 +75,28 @@ export const POST = withAuthRoute(async (req, ctx) => {
 
   const subtotal = itemsConSnapshot.reduce((acc, i) => acc.plus(i.total), new Prisma.Decimal(0));
 
-  const factura = await prisma.factura.create({
-    data: {
-      numero,
-      clienteId: clienteId || null,
-      usuarioId: ctx.userId,
-      metodoPago: metodoPago || null,
-      notas: notas || null,
-      subtotal,
-      total: subtotal,
-      items: { create: itemsConSnapshot },
-    },
-    include: { items: true },
+  const factura = await prisma.$transaction(async (tx) => {
+    const creada = await tx.factura.create({
+      data: {
+        numero,
+        clienteId: clienteId || null,
+        usuarioId: ctx.userId,
+        metodoPago: metodoPago || null,
+        notas: notas || null,
+        subtotal,
+        total: subtotal,
+        items: { create: itemsConSnapshot },
+      },
+      include: { items: true },
+    });
+
+    await descontarStockPorVenta(
+      tx,
+      creada.id,
+      items.map((i) => ({ productoId: i.productoId ?? null, cantidad: i.cantidad }))
+    );
+
+    return creada;
   });
 
   return NextResponse.json(factura, { status: 201 });

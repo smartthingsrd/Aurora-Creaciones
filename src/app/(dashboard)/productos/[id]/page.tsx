@@ -53,6 +53,8 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
           costo: producto.costo?.toString() ?? null,
           precio: producto.precio.toString(),
           margenObjetivo: producto.margenObjetivo?.toString() ?? null,
+          stock: producto.stock?.toString() ?? null,
+          stockMinimo: producto.stockMinimo?.toString() ?? null,
           activo: producto.activo,
           categoriaNombre: producto.categoria?.nombre ?? null,
         }}

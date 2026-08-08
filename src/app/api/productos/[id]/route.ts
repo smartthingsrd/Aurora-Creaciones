@@ -31,7 +31,7 @@ export const GET = withAuthRoute(async (_req, _ctx, { params }: { params: Promis
 export const PATCH = withAuthRoute(async (req, ctx, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
   const data = await req.json();
-  const { nombre, descripcion, sku, categoriaId, precio, costo, margenObjetivo, activo } = data;
+  const { nombre, descripcion, sku, categoriaId, precio, costo, margenObjetivo, activo, stock, stockMinimo } = data;
 
   const esAdmin = ROLES_ADMIN.includes(ctx.rol);
   const updateData: Record<string, unknown> = {};
@@ -42,11 +42,16 @@ export const PATCH = withAuthRoute(async (req, ctx, { params }: { params: Promis
   if (activo !== undefined) updateData.activo = activo;
   if (precio !== undefined) updateData.precio = new Prisma.Decimal(precio);
 
-  // Costo manual y margen objetivo solo los toca admin/dueña.
+  // Costo manual, margen objetivo y stock solo los toca admin/dueña — mismas
+  // razones que el costo (vendedora no debe poder alterar estos números).
   if (esAdmin) {
     if (costo !== undefined) updateData.costo = costo != null ? new Prisma.Decimal(costo) : null;
     if (margenObjetivo !== undefined) {
       updateData.margenObjetivo = margenObjetivo != null ? new Prisma.Decimal(margenObjetivo) : null;
+    }
+    if (stock !== undefined) updateData.stock = stock != null && stock !== "" ? new Prisma.Decimal(stock) : null;
+    if (stockMinimo !== undefined) {
+      updateData.stockMinimo = stockMinimo != null && stockMinimo !== "" ? new Prisma.Decimal(stockMinimo) : null;
     }
   }
 

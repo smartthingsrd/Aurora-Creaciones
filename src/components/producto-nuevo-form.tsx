@@ -28,6 +28,8 @@ export function ProductoNuevoForm({
     precio: "",
     margenObjetivo: "",
     descripcion: "",
+    stock: "",
+    stockMinimo: "",
   });
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -46,6 +48,8 @@ export function ProductoNuevoForm({
           costo: form.tipoCosteo === "simple" && form.costo ? Number(form.costo) : null,
           precio: form.precio ? Number(form.precio) : null,
           margenObjetivo: form.margenObjetivo ? Number(form.margenObjetivo) / 100 : null,
+          stock: form.tipoCosteo === "simple" && form.stock ? Number(form.stock) : null,
+          stockMinimo: form.tipoCosteo === "simple" && form.stockMinimo ? Number(form.stockMinimo) : null,
         }),
       });
       const data = await res.json();
@@ -101,6 +105,19 @@ export function ProductoNuevoForm({
         <div className="space-y-1.5">
           <Label>Costo (RD$)</Label>
           <Input type="number" step="0.01" min="0" value={form.costo} onChange={(e) => set("costo", e.target.value)} placeholder="0.00" />
+        </div>
+      )}
+
+      {form.tipoCosteo === "simple" && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Stock actual (opcional)</Label>
+            <Input type="number" step="0.01" min="0" value={form.stock} onChange={(e) => set("stock", e.target.value)} placeholder="Sin rastrear" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Stock mínimo (opcional)</Label>
+            <Input type="number" step="0.01" min="0" value={form.stockMinimo} onChange={(e) => set("stockMinimo", e.target.value)} placeholder="Alerta si baja de..." />
+          </div>
         </div>
       )}
 

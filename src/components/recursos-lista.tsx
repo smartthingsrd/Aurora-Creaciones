@@ -28,6 +28,8 @@ export type RecursoDTO = {
   costoCompra: string;
   cantidadCompra: string;
   costoUnitario: string;
+  stock: string | null;
+  stockMinimo: string | null;
   activo: boolean;
   usadoEnProductos: number;
 };
@@ -71,6 +73,8 @@ function RecursoForm({
     descripcion: recurso?.descripcion ?? "",
     costoCompra: recurso?.costoCompra ?? "",
     cantidadCompra: recurso?.cantidadCompra ?? "",
+    stock: recurso?.stock ?? "",
+    stockMinimo: recurso?.stockMinimo ?? "",
   });
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -153,6 +157,20 @@ function RecursoForm({
             </p>
           )}
 
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Stock actual (opcional)</Label>
+              <Input type="number" step="0.0001" min="0" value={form.stock} onChange={(e) => set("stock", e.target.value)} placeholder="Sin rastrear" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Stock mínimo (opcional)</Label>
+              <Input type="number" step="0.0001" min="0" value={form.stockMinimo} onChange={(e) => set("stockMinimo", e.target.value)} placeholder="Alerta si baja de..." />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-1.5">
+            Dejar en blanco si no quieres rastrear stock de este recurso — se descuenta solo al facturar productos que lo usan.
+          </p>
+
           <div className="space-y-1.5">
             <Label>SKU / código (opcional)</Label>
             <Input value={form.sku} onChange={(e) => set("sku", e.target.value)} />
@@ -231,6 +249,7 @@ export function RecursosLista({ recursosIniciales }: { recursosIniciales: Recurs
               <TableHead>Tipo</TableHead>
               <TableHead>Unidad</TableHead>
               <TableHead className="text-right">Costo unitario</TableHead>
+              <TableHead className="text-right">Stock</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Uso</TableHead>
               <TableHead />
@@ -239,17 +258,28 @@ export function RecursosLista({ recursosIniciales }: { recursosIniciales: Recurs
           <TableBody>
             {visibles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   Sin recursos todavía
                 </TableCell>
               </TableRow>
             ) : (
-              visibles.map((r) => (
+              visibles.map((r) => {
+                const stockBajo = r.stock != null && r.stockMinimo != null && Number(r.stock) <= Number(r.stockMinimo);
+                return (
                 <TableRow key={r.id} className="cursor-pointer" onClick={() => abrirEditar(r)}>
                   <TableCell className="font-medium">{r.nombre}</TableCell>
                   <TableCell className="text-muted-foreground">{TIPO_LABEL[r.tipo] ?? r.tipo}</TableCell>
                   <TableCell className="text-muted-foreground">{r.unidadMedida}</TableCell>
                   <TableCell className="text-right font-medium">{fmt(r.costoUnitario)}</TableCell>
+                  <TableCell className="text-right">
+                    {r.stock != null ? (
+                      <span className={stockBajo ? "text-red-600 font-semibold" : "text-muted-foreground"}>
+                        {Number(r.stock).toLocaleString("es-DO", { maximumFractionDigits: 2 })}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <StatusBadge variant={r.activo ? "success" : "muted"} label={r.activo ? "Activo" : "Inactivo"} />
                   </TableCell>
@@ -265,7 +295,8 @@ export function RecursosLista({ recursosIniciales }: { recursosIniciales: Recurs
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>

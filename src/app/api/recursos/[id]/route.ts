@@ -8,7 +8,7 @@ export const PATCH = withAuthRoute(
   async (req, _ctx, { params }: { params: Promise<{ id: string }> }) => {
     const { id } = await params;
     const data = await req.json();
-    const { nombre, sku, tipo, descripcion, unidadMedida, costoCompra, cantidadCompra, activo } = data;
+    const { nombre, sku, tipo, descripcion, unidadMedida, costoCompra, cantidadCompra, activo, stock, stockMinimo } = data;
 
     const updateData: Record<string, unknown> = {};
     if (nombre !== undefined) updateData.nombre = nombre;
@@ -17,6 +17,10 @@ export const PATCH = withAuthRoute(
     if (descripcion !== undefined) updateData.descripcion = descripcion || null;
     if (unidadMedida !== undefined) updateData.unidadMedida = unidadMedida;
     if (activo !== undefined) updateData.activo = activo;
+    if (stock !== undefined) updateData.stock = stock != null && stock !== "" ? new Prisma.Decimal(stock) : null;
+    if (stockMinimo !== undefined) {
+      updateData.stockMinimo = stockMinimo != null && stockMinimo !== "" ? new Prisma.Decimal(stockMinimo) : null;
+    }
 
     if (costoCompra != null && cantidadCompra != null) {
       const cCompra = new Prisma.Decimal(costoCompra);

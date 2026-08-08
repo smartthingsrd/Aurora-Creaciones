@@ -12,7 +12,7 @@ export const GET = withAuthRoute(async () => {
 export const POST = withAuthRoute(
   async (req) => {
     const data = await req.json();
-    const { nombre, sku, tipo, descripcion, unidadMedida, costoCompra, cantidadCompra } = data;
+    const { nombre, sku, tipo, descripcion, unidadMedida, costoCompra, cantidadCompra, stock, stockMinimo } = data;
 
     if (!nombre || !tipo || !unidadMedida || costoCompra == null || cantidadCompra == null) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
@@ -33,6 +33,8 @@ export const POST = withAuthRoute(
         costoCompra: cCompra,
         cantidadCompra: cantCompra,
         costoUnitario: cCompra.div(cantCompra),
+        stock: stock != null && stock !== "" ? new Prisma.Decimal(stock) : null,
+        stockMinimo: stockMinimo != null && stockMinimo !== "" ? new Prisma.Decimal(stockMinimo) : null,
       },
     });
     return NextResponse.json(recurso, { status: 201 });

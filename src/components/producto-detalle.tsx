@@ -46,6 +46,7 @@ export function ProductoDetalle({
   producto: {
     id: string; nombre: string; sku: string | null; tipoCosteo: string;
     costo: string | null; precio: string; margenObjetivo: string | null;
+    stock: string | null; stockMinimo: string | null;
     activo: boolean; categoriaNombre: string | null;
   };
   costo: { materiales: string; manoObra: string; otros: string; total: string };
@@ -64,6 +65,9 @@ export function ProductoDetalle({
     producto.margenObjetivo ? String(Math.round(n(producto.margenObjetivo) * 1000) / 10) : ""
   );
   const [costoManualForm, setCostoManualForm] = useState(producto.costo ?? "");
+  const [guardandoStock, setGuardandoStock] = useState(false);
+  const [stockForm, setStockForm] = useState(producto.stock ?? "");
+  const [stockMinimoForm, setStockMinimoForm] = useState(producto.stockMinimo ?? "");
 
   const costoTotal = n(costo.total);
   const precioActual = n(precioForm);
@@ -108,6 +112,23 @@ export function ProductoDetalle({
     }
   }
 
+  async function guardarStock() {
+    setGuardandoStock(true);
+    try {
+      await fetch(`/api/productos/${producto.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stock: stockForm ? Number(stockForm) : null,
+          stockMinimo: stockMinimoForm ? Number(stockMinimoForm) : null,
+        }),
+      });
+      router.refresh();
+    } finally {
+      setGuardandoStock(false);
+    }
+  }
+
   async function eliminarItem(itemId: string) {
     if (!confirm("¿Quitar este componente de la receta?")) return;
     await fetch(`/api/productos/${producto.id}/receta-items/${itemId}`, { method: "DELETE" });
@@ -123,6 +144,9 @@ export function ProductoDetalle({
         {producto.sku && <span className="text-xs text-muted-foreground">SKU: {producto.sku}</span>}
         {producto.categoriaNombre && <span className="text-xs text-muted-foreground">· {producto.categoriaNombre}</span>}
         <StatusBadge variant={producto.activo ? "success" : "muted"} label={producto.activo ? "Activo" : "Inactivo"} />
+        {producto.stock != null && producto.stockMinimo != null && n(producto.stock) <= n(producto.stockMinimo) && (
+          <StatusBadge variant="danger" label={`Stock bajo: ${producto.stock}`} />
+        )}
       </div>
 
       {producto.tipoCosteo === "simple" && puedeVerCostos && (
@@ -138,6 +162,29 @@ export function ProductoDetalle({
               Guardar
             </Button>
           </div>
+        </div>
+      )}
+
+      {producto.tipoCosteo === "simple" && puedeVerCostos && (
+        <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+          <h3 className="text-sm font-semibold">Stock</h3>
+          <div className="flex items-end gap-3 flex-wrap">
+            <div className="space-y-1.5">
+              <Label>Stock actual</Label>
+              <Input type="number" step="0.01" min="0" className="w-32" value={stockForm} onChange={(e) => setStockForm(e.target.value)} placeholder="Sin rastrear" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Stock mínimo</Label>
+              <Input type="number" step="0.01" min="0" className="w-32" value={stockMinimoForm} onChange={(e) => setStockMinimoForm(e.target.value)} placeholder="Alerta si baja de..." />
+            </div>
+            <Button onClick={guardarStock} disabled={guardandoStock} className="gap-2">
+              {guardandoStock && <Loader2 size={14} className="animate-spin" />}
+              Guardar
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Se descuenta solo al facturar este producto. Dejar en blanco si no quieres rastrear stock.
+          </p>
         </div>
       )}
 
