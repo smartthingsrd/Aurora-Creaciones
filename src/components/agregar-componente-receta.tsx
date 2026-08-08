@@ -134,7 +134,7 @@ export function AgregarComponenteReceta({
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={() => { reset(); onOpenChange(false); }}>Cancelar</Button>
             <Button type="submit" disabled={loading} className="gap-2">
               {loading && <Loader2 size={14} className="animate-spin" />}
               Agregar

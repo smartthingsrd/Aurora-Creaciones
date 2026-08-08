@@ -184,14 +184,20 @@ export function RecursosLista({ recursosIniciales }: { recursosIniciales: Recurs
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando, setEditando] = useState<RecursoDTO | null>(null);
   const [filtroTipo, setFiltroTipo] = useState("");
+  // Cambia en cada apertura para forzar un remount del formulario (limpia el
+  // estado interno) — si no, reabrir el diálogo reutiliza los valores de la
+  // última vez que estuvo montado, sea de otro recurso o de un create previo.
+  const [formInstance, setFormInstance] = useState(0);
 
   function abrirNuevo() {
     setEditando(null);
+    setFormInstance((n) => n + 1);
     setDialogOpen(true);
   }
 
   function abrirEditar(r: RecursoDTO) {
     setEditando(r);
+    setFormInstance((n) => n + 1);
     setDialogOpen(true);
   }
 
@@ -258,6 +264,7 @@ export function RecursosLista({ recursosIniciales }: { recursosIniciales: Recurs
       </div>
 
       <RecursoForm
+        key={formInstance}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         recurso={editando}

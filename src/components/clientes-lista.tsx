@@ -88,11 +88,20 @@ export function ClientesLista({ clientesIniciales }: { clientesIniciales: Client
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando, setEditando] = useState<ClienteDTO | null>(null);
+  // Cambia en cada apertura para forzar un remount del formulario y evitar
+  // que arrastre valores de la última vez que estuvo montado.
+  const [formInstance, setFormInstance] = useState(0);
+
+  function abrir(c: ClienteDTO | null) {
+    setEditando(c);
+    setFormInstance((n) => n + 1);
+    setDialogOpen(true);
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => { setEditando(null); setDialogOpen(true); }} className="gap-2">
+        <Button onClick={() => abrir(null)} className="gap-2">
           <Plus size={16} />Nuevo cliente
         </Button>
       </div>
@@ -112,13 +121,13 @@ export function ClientesLista({ clientesIniciales }: { clientesIniciales: Client
               <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Sin clientes todavía</TableCell></TableRow>
             ) : (
               clientesIniciales.map((c) => (
-                <TableRow key={c.id} className="cursor-pointer" onClick={() => { setEditando(c); setDialogOpen(true); }}>
+                <TableRow key={c.id} className="cursor-pointer" onClick={() => abrir(c)}>
                   <TableCell className="font-medium">{c.nombre}</TableCell>
                   <TableCell className="text-muted-foreground">{c.cedula ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{c.telefono ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{c.email ?? "—"}</TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setEditando(c); setDialogOpen(true); }}>
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); abrir(c); }}>
                       <Pencil size={14} />
                     </Button>
                   </TableCell>
@@ -128,7 +137,7 @@ export function ClientesLista({ clientesIniciales }: { clientesIniciales: Client
           </TableBody>
         </Table>
       </div>
-      <ClienteForm open={dialogOpen} onOpenChange={setDialogOpen} cliente={editando} onGuardado={() => router.refresh()} />
+      <ClienteForm key={formInstance} open={dialogOpen} onOpenChange={setDialogOpen} cliente={editando} onGuardado={() => router.refresh()} />
     </div>
   );
 }
