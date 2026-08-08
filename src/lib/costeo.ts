@@ -76,3 +76,18 @@ export async function contarProductosQueUsanRecurso(recursoId: string): Promise<
   });
   return items.length;
 }
+
+/** Igual que contarProductosQueUsanRecurso pero para TODOS los recursos a la vez — evita N+1 en listados. */
+export async function contarUsoRecursosBatch(): Promise<Map<string, number>> {
+  const items = await prisma.recetaItem.findMany({
+    where: { recursoId: { not: null } },
+    select: { recursoId: true, recetaId: true },
+    distinct: ["recursoId", "recetaId"],
+  });
+  const conteo = new Map<string, number>();
+  for (const item of items) {
+    if (!item.recursoId) continue;
+    conteo.set(item.recursoId, (conteo.get(item.recursoId) ?? 0) + 1);
+  }
+  return conteo;
+}

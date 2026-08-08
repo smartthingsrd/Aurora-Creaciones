@@ -6,7 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, FileText, ClipboardList, Users, Package,
-  Boxes, UserCircle, LogOut, type LucideIcon,
+  Boxes, UserCircle, LogOut, BarChart3, type LucideIcon,
 } from "lucide-react";
 
 type NavItem = {
@@ -24,6 +24,7 @@ const ITEMS: NavItem[] = [
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/productos", label: "Productos", icon: Package },
   { href: "/recursos", label: "Recursos", icon: Boxes, adminOnly: true },
+  { href: "/reportes", label: "Reportes", icon: BarChart3, adminOnly: true },
   { href: "/usuarios", label: "Usuarios", icon: UserCircle, adminOnly: true },
 ];
 

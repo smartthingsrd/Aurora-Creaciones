@@ -29,6 +29,7 @@ export type RecursoDTO = {
   cantidadCompra: string;
   costoUnitario: string;
   activo: boolean;
+  usadoEnProductos: number;
 };
 
 const TIPOS = [
@@ -231,13 +232,14 @@ export function RecursosLista({ recursosIniciales }: { recursosIniciales: Recurs
               <TableHead>Unidad</TableHead>
               <TableHead className="text-right">Costo unitario</TableHead>
               <TableHead>Estado</TableHead>
+              <TableHead>Uso</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {visibles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   Sin recursos todavía
                 </TableCell>
               </TableRow>
@@ -250,6 +252,12 @@ export function RecursosLista({ recursosIniciales }: { recursosIniciales: Recurs
                   <TableCell className="text-right font-medium">{fmt(r.costoUnitario)}</TableCell>
                   <TableCell>
                     <StatusBadge variant={r.activo ? "success" : "muted"} label={r.activo ? "Activo" : "Inactivo"} />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge
+                      variant={r.usadoEnProductos > 0 ? "info" : "muted"}
+                      label={r.usadoEnProductos > 0 ? `${r.usadoEnProductos} producto${r.usadoEnProductos === 1 ? "" : "s"}` : "Sin uso"}
+                    />
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); abrirEditar(r); }}>
