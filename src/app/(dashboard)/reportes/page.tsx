@@ -107,7 +107,7 @@ export default async function ReportesPage({
                   <TableCell className="text-right">{p.unidadesVendidas}</TableCell>
                   <TableCell className="text-right">{fmt(p.ventas.toNumber())}</TableCell>
                   <TableCell className="text-right text-muted-foreground">{fmt(p.costo.toNumber())}</TableCell>
-                  <TableCell className={cn("text-right font-medium", p.beneficio.gte(0) ? "text-green-700" : "text-red-700")}>
+                  <TableCell className={cn("text-right font-medium", p.beneficio.gte(0) ? "text-beneficio" : "text-alerta")}>
                     {fmt(p.beneficio.toNumber())}
                   </TableCell>
                   <TableCell className="text-right">{(p.margen * 100).toFixed(1)}%</TableCell>

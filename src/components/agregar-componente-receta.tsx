@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ComboboxBusqueda } from "@/components/combobox-busqueda";
+import { FormError } from "@/components/form-error";
 
 type RecursoOpcion = { id: string; nombre: string; tipo: string; unidadMedida: string };
 type ProductoOpcion = { id: string; nombre: string; tipoCosteo: string };
@@ -129,9 +130,7 @@ export function AgregarComponenteReceta({
             <Input type="number" step="0.1" min="0" max="90" value={mermaPct} onChange={(e) => setMermaPct(e.target.value)} placeholder="0" />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
-          )}
+          <FormError>{error}</FormError>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => { reset(); onOpenChange(false); }}>Cancelar</Button>

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Pencil, Layers, Wrench, Package, DollarSign, TrendingUp, Loader2 } from "lucide-react";
 import { AgregarComponenteReceta } from "@/components/agregar-componente-receta";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { FormError } from "@/components/form-error";
 
 const TIPO_LABEL: Record<string, string> = { material: "Material", mano_obra: "Mano de obra", otro: "Otro costo" };
 
@@ -117,7 +118,7 @@ function EditarItemDialog({
             <Label>Merma (% opcional)</Label>
             <Input type="number" step="0.1" min="0" max="90" value={mermaPct} onChange={(e) => setMermaPct(e.target.value)} placeholder="0" />
           </div>
-          {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+          <FormError>{error}</FormError>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={loading} className="gap-2">
@@ -212,7 +213,7 @@ function ExtraForm({
               </div>
             )}
           </div>
-          {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+          <FormError>{error}</FormError>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={loading} className="gap-2">
@@ -289,7 +290,7 @@ function ExtrasProducto({ productoId, extras }: { productoId: string; extras: Ex
                 </TableCell>
                 <TableCell>
                   <Button variant="ghost" size="sm" onClick={() => eliminarExtra(ex.id)}>
-                    <Trash2 size={14} className="text-red-500" />
+                    <Trash2 size={14} className="text-alerta" />
                   </Button>
                 </TableCell>
               </TableRow>
@@ -543,7 +544,7 @@ export function ProductoDetalle({
                               <Pencil size={14} />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => eliminarItem(item.id)}>
-                              <Trash2 size={14} className="text-red-500" />
+                              <Trash2 size={14} className="text-alerta" />
                             </Button>
                           </div>
                         </TableCell>

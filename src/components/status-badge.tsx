@@ -10,22 +10,24 @@ export type BadgeVariant =
   // Genéricos
   | "success" | "warning" | "danger" | "info" | "purple" | "muted";
 
+// Mismos tokens de identidad que StatCard (globals.css): beneficio=verde,
+// cotizaciones=champagne, ventas=lavanda, clientes=violeta, alerta=terracota.
 const BADGE_STYLES: Record<BadgeVariant, string> = {
-  pagada:     "bg-green-50 text-green-700 border border-green-200",
-  pendiente:  "bg-amber-50 text-amber-700 border border-amber-200",
-  anulada:    "bg-gray-100 text-gray-500 border border-gray-200",
-  borrador:   "bg-slate-50 text-slate-700 border border-slate-200",
-  enviada:    "bg-blue-50 text-blue-700 border border-blue-200",
-  aceptada:   "bg-green-50 text-green-700 border border-green-200",
-  rechazada:  "bg-red-50 text-red-700 border border-red-200",
-  expirada:   "bg-gray-100 text-gray-500 border border-gray-200",
-  simple:     "bg-slate-50 text-slate-700 border border-slate-200",
-  compuesto:  "bg-violet-50 text-violet-700 border border-violet-200",
-  success:    "bg-green-50 text-green-700 border border-green-200",
-  warning:    "bg-amber-50 text-amber-700 border border-amber-200",
-  danger:     "bg-red-50 text-red-700 border border-red-200",
-  info:       "bg-blue-50 text-blue-700 border border-blue-200",
-  purple:     "bg-violet-50 text-violet-700 border border-violet-200",
+  pagada:     "bg-beneficio-soft text-beneficio border border-beneficio/25",
+  pendiente:  "bg-cotizaciones-soft text-cotizaciones border border-cotizaciones/25",
+  anulada:    "bg-muted text-muted-foreground border border-border",
+  borrador:   "bg-muted text-muted-foreground border border-border",
+  enviada:    "bg-ventas-soft text-ventas border border-ventas/25",
+  aceptada:   "bg-beneficio-soft text-beneficio border border-beneficio/25",
+  rechazada:  "bg-alerta-soft text-alerta border border-alerta/25",
+  expirada:   "bg-muted text-muted-foreground border border-border",
+  simple:     "bg-muted text-muted-foreground border border-border",
+  compuesto:  "bg-clientes-soft text-clientes border border-clientes/25",
+  success:    "bg-beneficio-soft text-beneficio border border-beneficio/25",
+  warning:    "bg-cotizaciones-soft text-cotizaciones border border-cotizaciones/25",
+  danger:     "bg-alerta-soft text-alerta border border-alerta/25",
+  info:       "bg-ventas-soft text-ventas border border-ventas/25",
+  purple:     "bg-clientes-soft text-clientes border border-clientes/25",
   muted:      "bg-muted text-muted-foreground border border-border",
 };
 

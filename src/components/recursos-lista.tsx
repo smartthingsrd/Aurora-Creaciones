@@ -17,6 +17,7 @@ import {
 import { Plus, Loader2, Pencil } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { ComboboxBusqueda } from "@/components/combobox-busqueda";
+import { FormError } from "@/components/form-error";
 
 export type RecursoDTO = {
   id: string;
@@ -181,9 +182,7 @@ function RecursoForm({
             <Input value={form.descripcion} onChange={(e) => set("descripcion", e.target.value)} />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
-          )}
+          <FormError>{error}</FormError>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
@@ -273,7 +272,7 @@ export function RecursosLista({ recursosIniciales }: { recursosIniciales: Recurs
                   <TableCell className="text-right font-medium">{fmt(r.costoUnitario)}</TableCell>
                   <TableCell className="text-right">
                     {r.stock != null ? (
-                      <span className={stockBajo ? "text-red-600 font-semibold" : "text-muted-foreground"}>
+                      <span className={stockBajo ? "text-alerta font-semibold" : "text-muted-foreground"}>
                         {Number(r.stock).toLocaleString("es-DO", { maximumFractionDigits: 2 })}
                       </span>
                     ) : (

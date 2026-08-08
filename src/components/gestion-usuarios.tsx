@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/status-badge";
+import { FormError } from "@/components/form-error";
 import { Plus, Loader2 } from "lucide-react";
 
 type Usuario = { id: string; nombre: string; email: string; rol: string; activo: boolean };
@@ -112,7 +113,7 @@ export function GestionUsuarios({ usuariosIniciales }: { usuariosIniciales: Usua
                 <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+            <FormError>{error}</FormError>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
               <Button type="submit" disabled={loading} className="gap-2">{loading && <Loader2 size={14} className="animate-spin" />}Crear</Button>

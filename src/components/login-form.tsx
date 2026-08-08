@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Sparkles } from "lucide-react";
+import { FormError } from "@/components/form-error";
 
 export function LoginForm() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export function LoginForm() {
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Sparkles size={26} className="text-primary" />
           </div>
-          <h1 className="text-2xl font-bold">Aurora Creaciones</h1>
+          <h1 className="font-heading text-2xl font-semibold">Aurora Creaciones</h1>
           <p className="text-muted-foreground text-sm mt-1">Ingresa tus credenciales para continuar</p>
         </div>
 
@@ -73,11 +74,7 @@ export function LoginForm() {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
-            </p>
-          )}
+          <FormError>{error}</FormError>
 
           <Button type="submit" disabled={loading} className="w-full">
             {loading

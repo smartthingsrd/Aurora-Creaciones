@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormError } from "@/components/form-error";
 import { Loader2 } from "lucide-react";
 
 export function ProductoNuevoForm({
@@ -138,7 +139,7 @@ export function ProductoNuevoForm({
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+        <FormError>{error}</FormError>
       )}
 
       <Button type="submit" disabled={loading} className="gap-2">

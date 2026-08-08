@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { FormError } from "@/components/form-error";
 import { Plus, Loader2, Pencil } from "lucide-react";
 
 export type ClienteDTO = {
@@ -73,7 +74,7 @@ function ClienteForm({
           </div>
           <div className="space-y-1.5"><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></div>
           <div className="space-y-1.5"><Label>Dirección</Label><Input value={form.direccion} onChange={(e) => set("direccion", e.target.value)} /></div>
-          {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+          <FormError>{error}</FormError>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={loading} className="gap-2">{loading && <Loader2 size={14} className="animate-spin" />}Guardar</Button>

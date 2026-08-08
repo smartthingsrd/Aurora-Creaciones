@@ -14,7 +14,7 @@ export function PageHeader({ title, description, actions, className }: PageHeade
       className
     )}>
       <div className="min-w-0">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">{title}</h1>
+        <h1 className="font-heading text-xl sm:text-2xl font-semibold tracking-tight text-foreground leading-tight">{title}</h1>
         {description && (
           <p className="text-sm text-muted-foreground mt-1">{description}</p>
         )}

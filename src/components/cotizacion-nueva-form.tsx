@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComboboxBusqueda } from "@/components/combobox-busqueda";
+import { FormError } from "@/components/form-error";
 import { Trash2, Plus, Loader2 } from "lucide-react";
 
 type Producto = { id: string; nombre: string; precio: string };
@@ -115,7 +116,7 @@ export function CotizacionNuevaForm({ productos, clientes }: { productos: Produc
               </div>
               <div className="col-span-12 sm:col-span-1 flex justify-end">
                 <Button type="button" variant="ghost" size="sm" onClick={() => setLineas((ls) => (ls.length > 1 ? ls.filter((x) => x.key !== l.key) : ls))}>
-                  <Trash2 size={14} className="text-red-500" />
+                  <Trash2 size={14} className="text-alerta" />
                 </Button>
               </div>
             </div>
@@ -126,7 +127,7 @@ export function CotizacionNuevaForm({ productos, clientes }: { productos: Produc
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+      <FormError>{error}</FormError>
 
       <Button type="submit" disabled={loading} className="gap-2">
         {loading && <Loader2 size={14} className="animate-spin" />}
